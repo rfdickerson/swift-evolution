@@ -73,10 +73,10 @@ to ensure only a single revision of the multi-package repository is required.
    problem, since the conventions typically would not have matched any other
    directory.
 
-3. Any package *not* located at the root of the repository is referred to as a
+2. Any package *not* located at the root of the repository is referred to as a
    *subpackage* of that repository.
 
-4. We will add support to the manifest dependency declaration for a `subpackage`
+3. We will add support to the manifest dependency declaration for a `subpackage`
    specifier identify the `name` of the subpackage of a multi-package repository
    the dependency is on:
 
@@ -90,19 +90,33 @@ to ensure only a single revision of the multi-package repository is required.
    The name here is the name assigned to the subpackage within the resolved
    version of the repository.
 
+4. We will add support to the manifest dependency declaration for *only*
+   specifying a subpackage:
+
+   ```
+   let package = Package(
+       dependencies: [
+           .Package(subpackage: "Foo")
+       ])
+   ```
+
+   In this case, the package will be assumed to be within the same
+   repository. There is no version specifier in this form, as the version is
+   inherently locked to that of the referencing dependee subpackage.
+
 5. We will amend the definition for existing package dependencies to require the
    URL they identify to be a mono-package repository (when no subpackage
    specifier is present). We will allow a dependency to refer to a mono-package
-   repository with a subpackage specifier matching the name of the package, to
-   assist with repositories wishing to transition to a multi-package repository
-   state.
+   repository with a subpackage specifier matching the name of the sole package,
+   to assist with repositories wishing to transition to (or from) a
+   multi-package repository.
 
 6. We will add support for efficiently scanning a repository to identify all
    subpackages. For dependencies, we can implement this purely by operating on
    the underlying Git object store without needing to touch the file system,
    which should make this efficient even for large repositories. For very large
-   repositories, we will most likely eventually need to take care to cache this
-   information.
+   repositories or other SCM systems, we will most likely eventually need to
+   take care to cache this information.
 
 7. For resolving subpackage names, we will need to parse the manifest for each
    subpackage. This may be a very time consuming operation, so we will reserve
@@ -112,6 +126,19 @@ to ensure only a single revision of the multi-package repository is required.
    efficient in almost all cases, but it does mean we will *not* diagnose
    non-unique subpackage names on dependent repositories. This is viewed as an
    acceptable tradeoff for the performance benefit in resolving subpackages.
+
+8. When resolving local subpackage dependency references (references with no
+   URL), we will need to be able to identify the root of the repository (in
+   order to then be able to enumerate the other subpackages to resolve the
+   name). Previously the package manager would do this by simply looking for
+   `Package.swift`, but we will need to rely on an ability to infer this based
+   on the SCM system itself.
+
+9. The behavior of local package operations, like `swift build`, will continue
+   to operate on a single package at a time. We will evaluate building
+   additional caching for repository-level data (e.g., the cache of known
+   subpackages) as the need presents itself, but will still create separate
+   build arenas for each individual package.
 
 
 ## Impact on existing packages
@@ -146,10 +173,7 @@ We considered alternatives in several areas:
    to need to checkout multiple versions of a large repository simply to satisfy
    a need for different versions of its subpackages.
 
-We could avoid supporting C language targets directly, and rely on external
-build systems and features to integrate them into Swift packages. We may wish to
-add such features independently from this proposal, but we think it is
-worthwhile to have some native support for C targets. This will make it easy to
-integrate small amounts of C code into what are otherwise Swift projects, and is
-in line with a long term direction of making the Swift package manager useful
-for non-Swift projects.
+3. We considered introducing an explicit marker for the root of the workspace
+   (e.g., `Packages.swift`, which could also serve as a place to store
+   additional metadata on the packages). However, we did not see sufficient need
+   to warrant its introduction.
