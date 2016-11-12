@@ -17,7 +17,7 @@ Large teams and organizations often have many projects coexisting in one
 repository. In some organizations, this can even take the form of *all* projects
 being in a single repository (a "monorepo"). For other organizations, for
 example LLVM + Clang + Swift itself, this may take a much more limited scope of
-simply related projects split among repositories in an ad hoc manner.
+related projects split among repositories in an ad hoc manner.
 
 Adoption of the Swift package manager in these environents requires some ability
 for packages to (a) not be tied to being in the root of the repository, and (b)
@@ -148,7 +148,7 @@ None, this was not previously possible.
 
 ## Alternatives considered
 
-We belief we must support this feature in some form or another.
+We believe we must support this feature in one form or another to support widespread adoption of the package manager.
 
 We considered alternatives in several areas:
 
